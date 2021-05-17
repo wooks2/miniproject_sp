@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+      PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+   "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+   
+<mapper namespace="net.developia.prj.models.ArticleDAO">
+
+
+<resultMap id="articleList" type="ArticleDTO">
+	<id property="articleNo" column="no"></id>
+	<id property="title" column="title"></id>
+	<id property="content" column="content"></id>
+	<id property="regdate" column="regdate"></id>
+	<id property="readcount" column="readcount"></id>
+	<id property="writer" column="writer"></id>
+	<association property="boardCF" javaType="ArticleCFDTO">
+		<result property="articleCFNo" column="board_cf_no"></result>
+		<result property="cf_name" column="cf"></result>
+	</association>
+</resultMap>
+
+<resultMap id="articleDetail" type="ArticleDTO">
+	<id property="articleNo" column="no"></id>
+	<id property="title" column="title"></id>
+	<id property="content" column="content"></id>
+	<id property="regdate" column="regdate"></id>
+	<id property="readcount" column="readcount"></id>
+	<id property="writer" column="writer"></id>
+	<association property="boardCF" javaType="ArticleCFDTO">
+		<result property="articleCFNo" column="board_cf_no"></result>
+		<result property="cf_name" column="cf"></result>
+	</association>
+	<association property="readgrade" javaType="GradeDTO">
+		<result property="gradeNo" column="grade_no"></result>
+		<result property="grade" column="grade"></result>
+	</association>
+</resultMap>
+
+
+<insert id="insertArticle" parameterType="HashMap">
+<![CDATA[
+INSERT INTO t_board(no, board_cf_no, title, content, member_no, grade_no)
+VALUES(t_board_no_seq.NEXTVAL, #{articleDTO.boardCF.articleCFNo}, #{articleDTO.title}, #{articleDTO.content}, #{memberDTO.memberNo}, #{articleDTO.readgrade.gradeNo})                             
+]]>
+</insert>
+
+<select id="getArticleList" resultType="ArticleDTO" resultMap="articleList">
+<![CDATA[
+select B.*, M.id as writer, C.board_name as cf                                  
+from (select rownum as rnum, A.*                                               
+      from (select no, board_cf_no, title, member_no, grade_no, regdate, readcount
+            from t_board                                                       
+            order by no desc) A                                                 
+     ) B                                                                        
+LEFT OUTER JOIN t_board_cf C ON B.board_cf_no = C.no                              
+LEFT OUTER JOIN t_member M ON B.member_no = M.no                                  
+where rnum between 1 and 10
+]]> 
+</select>
+
+<select id="getArticleListForCF" parameterType="long" resultType="ArticleDTO" resultMap="articleList">
+<![CDATA[
+select B.*, M.id as writer, C.board_name as cf                                   
+from (select rownum as rnum, A.*                                                
+      from (select no, board_cf_no, title, member_no, grade_no, regdate, readcount
+            from t_board                                                         
+            where board_cf_no=#{cfNo}                                              
+            order by no desc) A                                                  
+     ) B                                                                       
+LEFT OUTER JOIN t_board_cf C ON B.board_cf_no = C.no                             
+LEFT OUTER JOIN t_member M ON B.member_no = M.no                                
+where rnum between 1 and 10             
+]]>                                       
+</select>
+
+
+<select id="getNoneArticleList" resultType="ArticleDTO">
+<![CDATA[
+select B.*, M.id as writer, C.board_name as cf                                 
+from (select rownum as rnum, A.*                                               
+      from (select no, board_cf_no, title, member_no, grade_no, regdate, readcount
+            from t_board                                                       
+            where member_no IS NULL                                              
+            order by no desc) A                                                 
+     ) B                                                                       
+LEFT OUTER JOIN t_board_cf C ON B.board_cf_no = C.no                            
+LEFT OUTER JOIN t_member M ON B.member_no = M.no                               
+where rnum between 1 and 10         
+]]>                                              
+</select>
+
+<select id="updateReadCount" parameterType="long" statementType="CALLABLE">
+{ call proc_readcount(#{no}) }
+</select>
+
+<select id="getDetail" parameterType="long" resultType="ArticleDTO" resultMap="articleDetail">
+<![CDATA[
+SELECT B.no, B.board_cf_no, B.title, B.content, B.regdate, B.readcount, B.grade_no, M.id as writer, G.grade as grade, C.board_name as cf
+FROM ( SELECT no, board_cf_no, title, content, regdate, readcount, member_no, grade_no                                               
+       FROM t_board                                                                                                                
+       WHERE no=#{articleNo}                                                                                                                     
+     ) B                                                                                                                             
+LEFT OUTER JOIN t_member M ON B.member_no = M.no                                                                                     
+LEFT OUTER JOIN t_grade G ON B.grade_no = G.no                                                                                        
+LEFT OUTER JOIN t_board_cf C ON B.board_cf_no = C.no     
+]]>                                                                            
+</select>
+
+
+<update id="updateArticle" parameterType="ArticleDTO">
+UPDATE t_board SET
+	   title=#{title},     
+	   content=#{content},    
+	   grade_no=#{gradeNo},     
+	   board_cf_no=#{articleCFNo}, 
+WHERE no=#{articleNo}     
+</update>
+
+<delete id="deleteArticle" parameterType="ArticleDTO">
+DELETE FROM t_board
+WHERE no=#{articleNo}        
+</delete>
+
+<delete id="deleteArticleForNo" parameterType="long">
+DELETE FROM t_board
+WHERE no=#{articleNo}    
+</delete>
+</mapper>

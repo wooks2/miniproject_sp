@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+      PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+   "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+   
+<mapper namespace="net.developia.prj.models.MemberDAO">
+<resultMap id="member" type="MemberDTO">
+	<id property="memberNo" column="no"></id>
+	<id property="name" column="name"></id>
+	<id property="id" column="id"></id>
+	<id property="pw" column="pw"></id>
+	<id property="email" column="email"></id>
+	<id property="gender" column="gender"></id>
+	<id property="joindate" column="joindate"></id>
+	<id property="imgpath" column="imgpath"></id>
+	<association property="grade" javaType="GradeDTO">
+		<result property="gradeNo" column="grade_no"></result>
+		<result property="grade" column="grade"></result>
+	</association>
+</resultMap>
+
+<select id="getCurrentMember" parameterType="HashMap" resultType="MemberDTO" resultMap="member">
+<![CDATA[
+SELECT m.*, g.grade as grade                                
+FROM (SELECT * FROM t_member WHERE id='${id}' AND pw='${pw}') m, t_grade g
+WHERE m.grade_no=g.no
+]]>
+</select>
+
+<select id="getCurrentMemberForNo" parameterType="long" resultType="MemberDTO" resultMap="member">
+<![CDATA[
+SELECT m.*, g.grade as grade                   
+FROM (SELECT * FROM t_member WHERE no=#{no}) m, t_grade g
+WHERE m.grade_no = g.no 
+]]>                         
+</select>
+
+<select id="getMembers" resultType="MemberDTO" resultMap="member">
+<![CDATA[
+SELECT B.*, G.grade as grade              
+FROM (SELECT rownum as rnum, A.*           
+      FROM (SELECT *                         
+            FROM t_member                    
+            order by joindate desc) A    
+      ) B                                    
+LEFT OUTER JOIN t_grade G ON B.grade_no = G.no
+WHERE rnum between 1 AND 10          
+]]>        
+</select>
+
+<select id="getMembersForGradeNo" parameterType="long" resultType="MemberDTO" resultMap="member">
+<![CDATA[
+SELECT B.*, G.grade as grade                 
+FROM (SELECT rownum as rnum, A.*              
+      FROM (SELECT *                          
+            FROM t_member                     
+            WHERE grade_no=#{gradeNo}                 
+            order by joindate desc) A          
+      ) B                                    
+LEFT OUTER JOIN t_grade G ON B.grade_no = G.no
+WHERE rnum between 1 AND 10        
+]]>         
+</select>
+
+<update id="deleteMember" parameterType="long">
+DELETE FROM t_member
+WHERE no=#{memberNo}       
+</update>
+
+<select id="checkID" parameterType="String" resultType="int">
+SELECT count(*)
+FROM t_member
+WHERE id=#{id}
+</select>
+
+</mapper>
